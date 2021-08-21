@@ -7,19 +7,24 @@
         }}</a-button>
         <a-button type="danger" v-else @click="signIn">登陆</a-button>
       </div>
-      <a-menu
-        theme="dark"
-        mode="horizontal"
-        :default-selected-keys="['1']"
-        :style="{ lineHeight: '64px' }"
-      >
-        <a-menu-item key="1">
-          <router-link to="store"> NFT 商场 </router-link>
-        </a-menu-item>
-        <a-menu-item key="2">
-          <router-link to="my">我的NFT</router-link>
-        </a-menu-item>
-      </a-menu>
+      <div id="menu">
+        <a-menu
+          theme="dark"
+          mode="horizontal"
+          :default-selected-keys="['1']"
+          :style="{ lineHeight: '64px' }"
+        >
+          <a-menu-item key="1">
+            <router-link to="store"> NFT 商场 </router-link>
+          </a-menu-item>
+          <a-menu-item key="2">
+            <router-link to="my">我的NFT</router-link>
+          </a-menu-item>
+        </a-menu>
+      </div>
+      <div id="upload">
+        <a-button type="danger">铸造</a-button>
+      </div>
     </a-layout-header>
 
     <a-layout-content style="padding: 0 50px">
@@ -35,11 +40,20 @@
   </a-layout>
 </template>
 
-<style>
+<style scoped>
 #sign {
   height: 31px;
-  margin: 2px 5px 16px 0;
+  margin: 0px 5px 15px 0;
   float: left;
+}
+#menu {
+  margin-left: 40%;
+  float: left;
+}
+#upload {
+  height: 31px;
+  margin: 0px 5px 15px 0;
+  float: right;
 }
 </style>
 
