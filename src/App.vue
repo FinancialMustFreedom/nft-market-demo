@@ -1,12 +1,35 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
     <router-view />
   </div>
 </template>
+
+<script>
+import utils from "@/utils/near-utils";
+const { getWallet } = utils;
+
+const initNear = async () => {
+  const { near, wallet, accountContract } = await getWallet();
+  const signedIn = wallet.isSignedIn();
+  window.wallet = wallet;
+  const info = {
+    near: near,
+    accountContract: accountContract,
+    accountId: wallet.getAccountId(),
+    isSignedIn: signedIn,
+  };
+  return info;
+};
+
+export default {
+  name: "app",
+  created: function () {
+    initNear().then((info) => {
+      this.$store.dispatch("updateNear", info);
+    });
+  },
+};
+</script>
 
 <style>
 #app {
