@@ -23,7 +23,9 @@
         </a-menu>
       </div>
       <div id="upload">
-        <a-button type="danger">铸造</a-button>
+        <router-link to="mint"
+          ><a-button type="danger">铸造</a-button></router-link
+        >
       </div>
     </a-layout-header>
 

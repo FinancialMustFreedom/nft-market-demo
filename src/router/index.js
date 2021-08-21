@@ -2,7 +2,8 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import Home from "../views/Home.vue";
 import Store from "../views/Store.vue";
-import My from "../views/My.vue";
+import My from "@/views/My.vue";
+import Mint from "@/views/Mint.vue";
 
 Vue.use(VueRouter);
 
@@ -19,6 +20,10 @@ const routes = [
       {
         path: "my",
         component: My,
+      },
+      {
+        path: "mint",
+        component: Mint,
       },
     ],
   },
