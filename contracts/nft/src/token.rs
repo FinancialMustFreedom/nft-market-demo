@@ -1,5 +1,3 @@
-use std::hash::Hash;
-
 use crate::*;
 
 pub type TokenId = String;
@@ -17,7 +15,7 @@ pub struct Token {
     pub token_type: Option<String>,       // token类型
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct JsonToken {
     pub token_id: TokenId,

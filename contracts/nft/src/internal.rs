@@ -4,9 +4,9 @@ use std::mem::size_of;
 use crate::*;
 use near_sdk::{log, Balance, CryptoHash, Promise};
 
-pub(crate) fn royalty_to_payout(a: u32, b: Balance) -> U128 {
-    U128(a as u128 * b / 10_1000u128)
-}
+// pub(crate) fn royalty_to_payout(a: u32, b: Balance) -> U128 {
+//     U128(a as u128 * b / 10_1000u128)
+// }
 
 /// 断言是否附带 1 yoctoNEAR
 pub(crate) fn assert_one_yocto() {

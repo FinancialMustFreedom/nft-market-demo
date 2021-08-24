@@ -264,10 +264,14 @@ impl Contract {
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
+    use std::net::ToSocketAddrs;
+
     use super::*;
     use near_sdk::test_utils::{accounts, VMContextBuilder};
     use near_sdk::testing_env;
     use near_sdk::MockedBlockchain;
+
+    const MINT_STORAGE_COST: u128 = 50_000_000_000_000_000_000_000;
 
     fn get_context(predecessor_account_id: ValidAccountId) -> VMContextBuilder {
         let mut builder = VMContextBuilder::new();
@@ -278,8 +282,45 @@ mod tests {
         builder
     }
 
+    fn get_default_nft_metadata() -> NFTMetadata {
+        NFTMetadata {
+            spec: "nft-1.0".to_string(),
+            name: "market nft".to_string(),
+            symbol: "MNFT".to_string(),
+            icon: None,
+            base_uri: None,
+            reference: None,
+            reference_hash: None,
+        }
+    }
+    fn get_default_token_metadata() -> TokenMetadata {
+        TokenMetadata {
+            title: Some("test token".to_string()),
+            description: Some("test token desc".to_string()),
+            media: None,
+            media_hash: None,
+            copies: None,
+            issued_at: None,
+            expires_at: None,
+            starts_at: None,
+            updated_at: None,
+            extra: None,
+            reference: None,
+            reference_hash: None,
+        }
+    }
+
+    fn get_default_contract(supply_cap_by_type: TypeSupplyCaps) -> Contract {
+        Contract::new(
+            accounts(1).into(),
+            get_default_nft_metadata(),
+            supply_cap_by_type,
+            Some(false),
+        )
+    }
+
     #[test]
-    #[should_panic(expected = "The contract is not initialized")]
+    #[should_panic]
     fn test_default() {
         let context = get_context(accounts(1));
         testing_env!(context.build());
@@ -288,6 +329,41 @@ mod tests {
 
     #[test]
     fn test_new() {
-        todo!();
+        let mut context = get_context(accounts(1));
+        testing_env!(context.build());
+        let contract = get_default_contract(HashMap::new());
+        testing_env!(context.is_view(true).build());
+        assert_eq!(contract.nft_token("1".to_string()), None);
+    }
+
+    #[test]
+    fn test_nft_mint() {
+        let mut context = get_context(accounts(0));
+        testing_env!(context.build());
+
+        let token_type = "t_token".to_string();
+        let mut supply_cap = HashMap::new();
+        supply_cap.insert(token_type.clone(), U64::from(10u64));
+        let mut contract = get_default_contract(supply_cap);
+
+        let token_id = "0".to_string();
+        let mut perpetual_royalties = HashMap::new();
+        let r = 20u32;
+        perpetual_royalties.insert(accounts(0).into(), r);
+
+        testing_env!(context.attached_deposit(MINT_STORAGE_COST).build());
+        contract.nft_mint(
+            Some(token_id.clone()),
+            get_default_token_metadata(),
+            Some(perpetual_royalties),
+            Some(accounts(0).into()),
+            Some(token_type.clone()),
+        );
+
+        let token_json = contract.nft_token(token_id.clone()).unwrap();
+        assert_eq!(token_json.token_id, token_id);
+        assert_eq!(token_json.token_type.unwrap(), token_type);
+        let rr = token_json.royalty.get(accounts(0).as_ref()).unwrap();
+        assert_eq!(*rr, r);
     }
 }
