@@ -9,11 +9,13 @@ use near_sdk::{env, near_bindgen, AccountId, CryptoHash, PanicOnDefault, Storage
 pub use crate::enumerable::*;
 use crate::internal::*;
 pub use crate::metadata::*;
+pub use crate::nft_core::*;
 pub use crate::token::*;
 
 mod enumerable;
 mod internal;
 mod metadata;
+mod nft_core;
 mod token;
 
 // 自定义类型

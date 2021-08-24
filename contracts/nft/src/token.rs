@@ -1,3 +1,5 @@
+use std::hash::Hash;
+
 use crate::*;
 
 pub type TokenId = String;
@@ -13,4 +15,17 @@ pub struct Token {
     // CUSTOM - fields
     pub royalty: HashMap<AccountId, u32>, // token版税
     pub token_type: Option<String>,       // token类型
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct JsonToken {
+    pub token_id: TokenId,
+    pub owner_id: AccountId,
+    pub metadata: TokenMetadata,
+    pub approved_account_ids: HashMap<AccountId, U64>,
+
+    // 自定义
+    pub royalty: HashMap<AccountId, u32>,
+    pub token_type: Option<String>,
 }
