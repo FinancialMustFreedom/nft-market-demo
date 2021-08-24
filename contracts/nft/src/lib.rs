@@ -6,10 +6,12 @@ use std::collections::HashMap;
 
 use near_sdk::{env, near_bindgen, AccountId, CryptoHash, PanicOnDefault, StorageUsage};
 
+pub use crate::enumerable::*;
 use crate::internal::*;
 pub use crate::metadata::*;
 pub use crate::token::*;
 
+mod enumerable;
 mod internal;
 mod metadata;
 mod token;
@@ -34,7 +36,7 @@ pub struct Contract {
 
     // 自定义部分
     pub supply_cap_by_type: TypeSupplyCaps, // 每种token的铸币上限
-    pub tokens_per_type: LookupMap<TokenType, UnorderedSet<TokenId>>,
+    pub tokens_per_type: LookupMap<TokenType, UnorderedSet<TokenId>>, // 记录每种token的数量
     pub token_types_locked: UnorderedSet<TokenType>,
     pub contract_royalty: u32,
 }
@@ -133,7 +135,7 @@ impl Contract {
             final_token_id = token_id
         }
 
-        let initial_storage_useage = env::storage_usage();
+        let initial_storage_usage = env::storage_usage();
         let mut owner_id = env::predecessor_account_id();
         if let Some(receiver_id) = receiver_id {
             owner_id = receiver_id.into();
@@ -167,7 +169,41 @@ impl Contract {
                     .get(&token_type)
                     .expect("Token type must have supply cap"),
             );
+            let supply = u64::from(self.nft_supply_for_type(&token_type));
+            assert!(supply < cap, "Cannot mint anymore token type."); // 供给量不能大于上限
+            let mut tokens_per_type = self.tokens_per_type.get(&token_type).unwrap_or_else(|| {
+                UnorderedSet::new(
+                    // 没有就新建
+                    StorageKey::TokensPerTypeInner {
+                        token_type_hash: hash_account_id(&token_type),
+                    }
+                    .try_to_vec()
+                    .unwrap(),
+                )
+            });
+            tokens_per_type.insert(&final_token_id);
+            self.tokens_per_type.insert(&token_type, &tokens_per_type);
         }
+
+        let token = Token {
+            owner_id,
+            approved_account_ids: Default::default(),
+            next_approval_id: 0,
+            royalty,
+            token_type,
+        };
+        assert!(
+            self.tokens_by_id.insert(&final_token_id, &token).is_none(),
+            "Token already exists"
+        );
+        self.token_metadata_by_id.insert(&final_token_id, &metadata);
+        self.internal_add_token_to_owner(&token.owner_id, &final_token_id);
+
+        let new_token_size_in_bytes = env::storage_usage() - initial_storage_usage;
+        let required_storage_in_bytes =
+            self.extra_storage_in_bytes_per_token + new_token_size_in_bytes;
+
+        refund_deposit(required_storage_in_bytes); // 返回多余的钱
     }
 
     // 一些自定义的setters
