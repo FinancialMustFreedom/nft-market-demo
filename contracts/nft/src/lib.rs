@@ -262,10 +262,32 @@ impl Contract {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
+    use super::*;
+    use near_sdk::test_utils::{accounts, VMContextBuilder};
+    use near_sdk::testing_env;
+    use near_sdk::MockedBlockchain;
+
+    fn get_context(predecessor_account_id: ValidAccountId) -> VMContextBuilder {
+        let mut builder = VMContextBuilder::new();
+        builder
+            .current_account_id(accounts(0))
+            .signer_account_id(predecessor_account_id.clone())
+            .predecessor_account_id(predecessor_account_id);
+        builder
+    }
+
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    #[should_panic(expected = "The contract is not initialized")]
+    fn test_default() {
+        let context = get_context(accounts(1));
+        testing_env!(context.build());
+        let _contract = Contract::default();
+    }
+
+    #[test]
+    fn test_new() {
+        todo!();
     }
 }
