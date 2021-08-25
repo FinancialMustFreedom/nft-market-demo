@@ -29,18 +29,18 @@ near_sdk::setup_alloc!();
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
-    pub owner_id: AccountId, // 合约地址
-    pub tokens_per_owner: LookupMap<AccountId, UnorderedSet<TokenId>>,
-    pub token_metadata_by_id: UnorderedMap<TokenId, TokenMetadata>,
-    pub tokens_by_id: LookupMap<TokenId, Token>,
-    pub extra_storage_in_bytes_per_token: StorageUsage, // 每个新token字节单位的存储大小
+    pub owner_id: AccountId,                                           // 合约地址
+    pub tokens_per_owner: LookupMap<AccountId, UnorderedSet<TokenId>>, // 通过account_id 查询他所拥有的token
+    pub token_metadata_by_id: UnorderedMap<TokenId, TokenMetadata>, // 通过tokenid查询token的metadata基本信息
+    pub tokens_by_id: LookupMap<TokenId, Token>,                    // 通过tokenid查询token
+    pub extra_storage_in_bytes_per_token: StorageUsage,             // 每个新token字节单位的存储大小
     pub metadata: LazyOption<NFTMetadata>,
 
     // 自定义部分
     pub supply_cap_by_type: TypeSupplyCaps, // 每种token的铸币上限
     pub tokens_per_type: LookupMap<TokenType, UnorderedSet<TokenId>>, // 记录每种token的数量
     pub token_types_locked: UnorderedSet<TokenType>,
-    pub contract_royalty: u32,
+    pub contract_royalty: u32, // 合约所收的版税
 }
 
 // storage key
@@ -132,12 +132,13 @@ impl Contract {
         receiver_id: Option<ValidAccountId>,
         token_type: Option<TokenType>,
     ) {
-        let mut final_token_id = format!("{}", self.token_metadata_by_id.len() + 1);
+        let mut final_token_id = format!("{}", self.token_metadata_by_id.len() + 1); // tokenid是从1不断递增
         if let Some(token_id) = token_id {
+            // 如果传人token_id就使用传入
             final_token_id = token_id
         }
 
-        let initial_storage_usage = env::storage_usage();
+        let initial_storage_usage = env::storage_usage(); // 记录当前的存储使用情况
         let mut owner_id = env::predecessor_account_id();
         if let Some(receiver_id) = receiver_id {
             owner_id = receiver_id.into();
@@ -264,8 +265,6 @@ impl Contract {
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
-    use std::net::ToSocketAddrs;
-
     use super::*;
     use near_sdk::test_utils::{accounts, VMContextBuilder};
     use near_sdk::testing_env;
