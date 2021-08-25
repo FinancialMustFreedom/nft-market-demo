@@ -17,6 +17,13 @@ pub(crate) fn assert_one_yocto() {
     )
 }
 
+pub(crate) fn assert_at_least_one_yocto() {
+    assert!(
+        env::attached_deposit() >= 1,
+        "Requires attached deposit of at least 1 yoctoNEAR",
+    )
+}
+
 pub(crate) fn hash_account_id(account_id: &AccountId) -> CryptoHash {
     let mut hash = CryptoHash::default();
     hash.copy_from_slice(&env::sha256(account_id.as_bytes()));
@@ -73,6 +80,7 @@ impl Contract {
     }
 
     /// 添加token记录
+    /// 如果这个人拥有其他的token就直接往里面加，如果是第一个就新建一个map
     pub(crate) fn internal_add_token_to_owner(
         &mut self,
         account_id: &AccountId,

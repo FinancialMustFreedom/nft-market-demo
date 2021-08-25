@@ -149,15 +149,17 @@ impl Contract {
         let mut total_perpetual = 0;
         if let Some(perpetual_royalties) = perpetual_royalties {
             assert!(
+                // 如果传入了版税信息，那么判断收税人是否多于5个，超过了不支持
                 perpetual_royalties.len() < 6,
                 "Cannot add more then 6 perpetual royalty amounts"
             );
+            // 将传入的版税信息写如到合约
             for (account, amount) in perpetual_royalties {
                 royalty.insert(account, amount);
-                total_perpetual += amount;
+                total_perpetual += amount; // 累计这个作品的总版税
             }
         }
-        // 版税现在在20%以内
+        // 总版税现在在20%以内
         assert!(
             total_perpetual <= MINTER_ROYALTY_CAP,
             "Perpetual royalties cannot be more then 20%"
@@ -168,7 +170,7 @@ impl Contract {
             let token_type = token_type.clone().unwrap();
             let cap = u64::from(
                 *self
-                    .supply_cap_by_type
+                    .supply_cap_by_type // 支持的token类型和上限在合约铸造的时候给定了，当然也可以后面调用add_token_type函数添加
                     .get(&token_type)
                     .expect("Token type must have supply cap"),
             );
@@ -196,10 +198,10 @@ impl Contract {
             token_type,
         };
         assert!(
-            self.tokens_by_id.insert(&final_token_id, &token).is_none(),
+            self.tokens_by_id.insert(&final_token_id, &token).is_none(), // 添加tokenid对token的索引
             "Token already exists"
         );
-        self.token_metadata_by_id.insert(&final_token_id, &metadata);
+        self.token_metadata_by_id.insert(&final_token_id, &metadata); // 添加索引
         self.internal_add_token_to_owner(&token.owner_id, &final_token_id);
 
         let new_token_size_in_bytes = env::storage_usage() - initial_storage_usage;
@@ -265,6 +267,8 @@ impl Contract {
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod tests {
+    use core::panic;
+
     use super::*;
     use near_sdk::test_utils::{accounts, VMContextBuilder};
     use near_sdk::testing_env;
@@ -319,6 +323,15 @@ mod tests {
     }
 
     #[test]
+    fn hm() {
+        let mut hm = HashMap::new();
+        hm.insert(1, 2);
+        assert_eq!(hm.get(&1).unwrap().clone(), 2);
+        hm.insert(1, 3);
+        assert_eq!(hm.get(&1).unwrap().clone(), 3);
+    }
+
+    #[test]
     #[should_panic]
     fn test_default() {
         let context = get_context(accounts(1));
@@ -335,6 +348,7 @@ mod tests {
         assert_eq!(contract.nft_token("1".to_string()), None);
     }
 
+    /// 测试铸造
     #[test]
     fn test_nft_mint() {
         let mut context = get_context(accounts(0));
@@ -364,5 +378,45 @@ mod tests {
         assert_eq!(token_json.token_type.unwrap(), token_type);
         let rr = token_json.royalty.get(accounts(0).as_ref()).unwrap();
         assert_eq!(*rr, r);
+    }
+
+    /// 测试转币
+    #[test]
+    fn test_nft_transfer() {
+        let mut context = get_context(accounts(0));
+        testing_env!(context.build());
+
+        let token_type = "t_token".to_string();
+        let mut supply_cap = HashMap::new();
+        supply_cap.insert(token_type.clone(), U64::from(10u64));
+        let mut contract = get_default_contract(supply_cap);
+
+        let token_id = "0".to_string();
+        let mut perpetual_royalties = HashMap::new();
+        let r = 20u32;
+        perpetual_royalties.insert(accounts(0).into(), r);
+
+        testing_env!(context.attached_deposit(MINT_STORAGE_COST).build());
+        // 给accounts(0)铸造了一个token_id=0的nft
+        contract.nft_mint(
+            Some(token_id.clone()),
+            get_default_token_metadata(),
+            Some(perpetual_royalties),
+            Some(accounts(0).into()),
+            Some(token_type.clone()),
+        );
+
+        testing_env!(context.attached_deposit(1).build()); // 转币要质押
+        contract.nft_transfer(accounts(1), token_id.clone(), None, None);
+
+        testing_env!(context.is_view(true).attached_deposit(0).build());
+        if let Some(token) = contract.nft_token(token_id.clone()) {
+            assert_eq!(token.token_id, token_id);
+            assert_ne!(token.owner_id, accounts(0).to_string());
+            assert_eq!(token.owner_id, accounts(1).to_string());
+            assert_eq!(token.approved_account_ids, HashMap::new());
+        } else {
+            panic!("token not correctly created, or not found by nft_token");
+        }
     }
 }
