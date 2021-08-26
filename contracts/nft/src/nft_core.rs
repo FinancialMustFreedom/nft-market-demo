@@ -1,11 +1,10 @@
 use crate::*;
-use near_sdk::{env, ext_contract, Balance, Gas, Promise, log, PromiseResult};
+use near_sdk::{env, ext_contract, log, Balance, Gas, Promise, PromiseResult};
 
 const NO_DEPOSIT: Balance = 0;
 const GAS_FOR_NFT_APPROVE: Gas = 10_000_000_000_000;
 const GAS_FOR_RESOLVE_TRANSFER: Gas = 10_000_000_000_000;
 const GAS_FOR_NFT_TRANSFER_CALL: Gas = 25_000_000_000_000 + GAS_FOR_RESOLVE_TRANSFER;
-
 
 pub trait NonFungibleTokenCore {
     /// 通过tokenid获取Jons格式的token
@@ -39,7 +38,6 @@ pub trait NonFungibleTokenCore {
         memo: Option<String>,
         msg: String,
     ) -> Promise;
-
 
     /// 申请nft转移
     fn nft_approve(&mut self, token_id: TokenId, account_id: ValidAccountId, msg: Option<String>);
@@ -85,7 +83,6 @@ trait NonFungibleTokenResolver {
     ) -> bool;
 }
 
-
 #[ext_contract(ext_non_fungible_approval_receiver)]
 trait NonFungibleTokenApprovalsReceiver {
     fn nft_on_approve(
@@ -110,8 +107,8 @@ impl NonFungibleTokenCore for Contract {
         max_len_payout: Option<u32>,
     ) -> Option<Payout> {
         assert_one_yocto();
-        let sender_id = env::predecessor_account_id(); 
-        let previous_token = self.internal_transfer( 
+        let sender_id = env::predecessor_account_id();
+        let previous_token = self.internal_transfer(
             &sender_id,
             receiver_id.as_ref(),
             &token_id,
@@ -125,19 +122,22 @@ impl NonFungibleTokenCore for Contract {
 
         // compute payouts based on balance option
         // adds in contract_royalty and computes previous owner royalty from remainder
-        let owner_id = previous_token.owner_id; 
-        let mut total_perpetual = 0; 
-        let payout = if let Some(balance) = balance { 
-            let balance_u128 = u128::from(balance); 
+        let owner_id = previous_token.owner_id;
+        let mut total_perpetual = 0;
+        let payout = if let Some(balance) = balance {
+            let balance_u128 = u128::from(balance);
             let mut payout: Payout = HashMap::new();
-            let royalty = self.tokens_by_id.get(&token_id).expect("No token").royalty; 
+            let royalty = self.tokens_by_id.get(&token_id).expect("No token").royalty;
 
-            if let Some(max_len_payout) = max_len_payout { 
-                assert!(royalty.len() as u32 <= max_len_payout, "Market cannot payout to that many receivers");
+            if let Some(max_len_payout) = max_len_payout {
+                assert!(
+                    royalty.len() as u32 <= max_len_payout,
+                    "Market cannot payout to that many receivers"
+                );
             }
 
-            for (k, v) in royalty.iter() { 
-                let key = k.clone(); 
+            for (k, v) in royalty.iter() {
+                let key = k.clone();
                 if key != owner_id {
                     payout.insert(key, royalty_to_payout(*v, balance_u128));
                     total_perpetual += *v;
@@ -146,12 +146,21 @@ impl NonFungibleTokenCore for Contract {
 
             // payout to contract owner - may be previous token owner, they get remainder of balance
             if self.contract_royalty > 0 && self.owner_id != owner_id {
-                payout.insert(self.owner_id.clone(), royalty_to_payout(self.contract_royalty, balance_u128));
+                payout.insert(
+                    self.owner_id.clone(),
+                    royalty_to_payout(self.contract_royalty, balance_u128),
+                );
                 total_perpetual += self.contract_royalty;
             }
-            assert!(total_perpetual <= MINTER_ROYALTY_CAP + CONTRACT_ROYALTY_CAP, "Royalties should not be more than caps");
+            assert!(
+                total_perpetual <= MINTER_ROYALTY_CAP + CONTRACT_ROYALTY_CAP,
+                "Royalties should not be more than caps"
+            );
             // payout to previous owner
-            payout.insert(owner_id, royalty_to_payout(10000 - total_perpetual, balance_u128));
+            payout.insert(
+                owner_id,
+                royalty_to_payout(10000 - total_perpetual, balance_u128),
+            );
 
             Some(payout)
         } else {
@@ -159,7 +168,6 @@ impl NonFungibleTokenCore for Contract {
         };
         payout
     }
-
 
     #[payable]
     fn nft_transfer(
@@ -289,8 +297,8 @@ impl NonFungibleTokenCore for Contract {
         msg: String,
     ) -> Promise {
         assert_one_yocto();
-        let sender_id = env::predecessor_account_id(); 
-        let previous_token = self.internal_transfer( 
+        let sender_id = env::predecessor_account_id();
+        let previous_token = self.internal_transfer(
             &sender_id,
             receiver_id.as_ref(),
             &token_id,
@@ -321,8 +329,8 @@ impl NonFungibleTokenCore for Contract {
     #[payable]
     fn nft_revoke_all(&mut self, token_id: TokenId) {
         assert_one_yocto();
-        let mut token = self.tokens_by_id.get(&token_id).expect("Token not found"); 
-        let predecessor_account_id = env::predecessor_account_id(); 
+        let mut token = self.tokens_by_id.get(&token_id).expect("Token not found");
+        let predecessor_account_id = env::predecessor_account_id();
         assert_eq!(&predecessor_account_id, &token.owner_id);
         if !token.approved_account_ids.is_empty() {
             refund_approved_account_ids(predecessor_account_id, &token.approved_account_ids);
@@ -348,8 +356,8 @@ impl NonFungibleTokenResolver for Contract {
     ) -> bool {
         // Whether receiver wants to return token back to the sender, based on `nft_on_transfer`
         // call result.
-        if let PromiseResult::Successful(value) = env::promise_result(0) { 
-            if let Ok(return_token) = near_sdk::serde_json::from_slice::<bool>(&value) { 
+        if let PromiseResult::Successful(value) = env::promise_result(0) {
+            if let Ok(return_token) = near_sdk::serde_json::from_slice::<bool>(&value) {
                 if !return_token {
                     // Token was successfully received.
                     refund_approved_account_ids(owner_id, &approved_account_ids);
@@ -358,7 +366,7 @@ impl NonFungibleTokenResolver for Contract {
             }
         }
 
-        let mut token = if let Some(token) = self.tokens_by_id.get(&token_id) { 
+        let mut token = if let Some(token) = self.tokens_by_id.get(&token_id) {
             if token.owner_id != receiver_id {
                 // The token is not owner by the receiver anymore. Can't return it.
                 refund_approved_account_ids(owner_id, &approved_account_ids);
