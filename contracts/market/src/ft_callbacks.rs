@@ -1,14 +1,23 @@
 use crate::*;
 
 /// callbacks from FT Contracts
-
 trait FungibleTokenReceiver {
-    fn ft_on_transfer(&mut self, sender_id: AccountId, amount: U128, msg: String) -> PromiseOrValue<U128>;
+    fn ft_on_transfer(
+        &mut self,
+        sender_id: AccountId,
+        amount: U128,
+        msg: String,
+    ) -> PromiseOrValue<U128>;
 }
 
 #[near_bindgen]
 impl FungibleTokenReceiver for Contract {
-    fn ft_on_transfer(&mut self, sender_id: AccountId, amount: U128, msg: String) -> PromiseOrValue<U128> {
+    fn ft_on_transfer(
+        &mut self,
+        sender_id: AccountId,
+        amount: U128,
+        msg: String,
+    ) -> PromiseOrValue<U128> {
         let PurchaseArgs {
             nft_contract_id,
             token_id,
@@ -19,7 +28,7 @@ impl FungibleTokenReceiver for Contract {
             .sales
             .get(&contract_and_token_id)
             .expect("No sale in ft_on_transfer");
-            
+
         assert_ne!(sale.owner_id, sender_id, "Cannot buy your own sale.");
 
         let ft_token_id = env::predecessor_account_id();
@@ -37,10 +46,14 @@ impl FungibleTokenReceiver for Contract {
                 ft_token_id,
                 price,
                 sender_id,
-            ).into()
+            )
+            .into()
         } else {
             if sale.is_auction && price.0 > 0 {
-                assert!(amount.0 >= price.0, "Amount must be greater than reserve price");
+                assert!(
+                    amount.0 >= price.0,
+                    "Amount must be greater than reserve price"
+                );
             }
             self.add_bid(
                 contract_and_token_id,

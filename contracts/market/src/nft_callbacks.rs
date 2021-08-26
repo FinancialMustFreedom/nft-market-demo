@@ -37,8 +37,7 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
         let nft_contract_id = env::predecessor_account_id();
         let signer_id = env::signer_account_id();
         assert_ne!(
-            nft_contract_id,
-            signer_id,
+            nft_contract_id, signer_id,
             "nft_on_approve should only be called via cross-contract call"
         );
         assert_eq!(
@@ -47,21 +46,26 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
             "owner_id should be signer_id"
         );
 
-        // enforce signer's storage is enough to cover + 1 more sale 
+        // enforce signer's storage is enough to cover + 1 more sale
 
         let storage_amount = self.storage_amount().0;
         let owner_paid_storage = self.storage_deposits.get(&signer_id).unwrap_or(0);
-        let signer_storage_required = (self.get_supply_by_owner_id(signer_id).0 + 1) as u128 * storage_amount;
+        let signer_storage_required =
+            (self.get_supply_by_owner_id(signer_id).0 + 1) as u128 * storage_amount;
         assert!(
             owner_paid_storage >= signer_storage_required,
             "Insufficient storage paid: {}, for {} sales at {} rate of per sale",
-            owner_paid_storage, signer_storage_required / STORAGE_PER_SALE, STORAGE_PER_SALE
+            owner_paid_storage,
+            signer_storage_required / STORAGE_PER_SALE,
+            STORAGE_PER_SALE
         );
 
-        let SaleArgs { sale_conditions, token_type, is_auction } =
-            near_sdk::serde_json::from_str(&msg).expect("Not valid SaleArgs");
+        let SaleArgs {
+            sale_conditions,
+            token_type,
+            is_auction,
+        } = near_sdk::serde_json::from_str(&msg).expect("Not valid SaleArgs");
 
-        
         for (ft_token_id, _price) in sale_conditions.clone() {
             if !self.ft_token_ids.contains(&ft_token_id) {
                 env::panic(
@@ -84,7 +88,7 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
                 token_id: token_id.clone(),
                 sale_conditions,
                 bids,
-                created_at: U64(env::block_timestamp()/1000000),
+                created_at: U64(env::block_timestamp() / 1000000),
                 token_type: token_type.clone(),
                 is_auction: is_auction.unwrap_or(false),
             },
@@ -127,11 +131,12 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
             .insert(&nft_contract_id, &by_nft_contract_id);
 
         if let Some(token_type) = token_type {
-            assert!(token_id.contains(&token_type), "TokenType should be substr of TokenId");
-            let mut by_nft_token_type = self
-                .by_nft_token_type
-                .get(&token_type)
-                .unwrap_or_else(|| {
+            assert!(
+                token_id.contains(&token_type),
+                "TokenType should be substr of TokenId"
+            );
+            let mut by_nft_token_type =
+                self.by_nft_token_type.get(&token_type).unwrap_or_else(|| {
                     UnorderedSet::new(
                         StorageKey::ByNFTTokenTypeInner {
                             token_type_hash: hash_account_id(&token_type),
@@ -140,7 +145,7 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
                         .unwrap(),
                     )
                 });
-                by_nft_token_type.insert(&contract_and_token_id);
+            by_nft_token_type.insert(&contract_and_token_id);
             self.by_nft_token_type
                 .insert(&token_type, &by_nft_token_type);
         }

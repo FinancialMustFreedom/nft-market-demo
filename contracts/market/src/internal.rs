@@ -17,14 +17,11 @@ impl Contract {
 
     /// refund the last bid of each token type, don't update sale because it's already been removed
 
-    pub(crate) fn refund_all_bids(
-        &mut self,
-        bids: &Bids,
-    ) {
+    pub(crate) fn refund_all_bids(&mut self, bids: &Bids) {
         for (bid_ft, bid_vec) in bids {
-            let bid = &bid_vec[bid_vec.len()-1];
+            let bid = &bid_vec[bid_vec.len() - 1];
             if bid_ft == "near" {
-                    Promise::new(bid.owner_id.clone()).transfer(u128::from(bid.price));
+                Promise::new(bid.owner_id.clone()).transfer(u128::from(bid.price));
             } else {
                 ext_contract::ft_transfer(
                     bid.owner_id.clone(),
@@ -46,7 +43,10 @@ impl Contract {
         let contract_and_token_id = format!("{}{}{}", &nft_contract_id, DELIMETER, token_id);
         let sale = self.sales.remove(&contract_and_token_id).expect("No sale");
 
-        let mut by_owner_id = self.by_owner_id.get(&sale.owner_id).expect("No sale by_owner_id");
+        let mut by_owner_id = self
+            .by_owner_id
+            .get(&sale.owner_id)
+            .expect("No sale by_owner_id");
         by_owner_id.remove(&contract_and_token_id);
         if by_owner_id.is_empty() {
             self.by_owner_id.remove(&sale.owner_id);
@@ -68,12 +68,16 @@ impl Contract {
 
         let token_type = sale.token_type.clone();
         if let Some(token_type) = token_type {
-            let mut by_nft_token_type = self.by_nft_token_type.get(&token_type).expect("No sale by nft_token_type");
+            let mut by_nft_token_type = self
+                .by_nft_token_type
+                .get(&token_type)
+                .expect("No sale by nft_token_type");
             by_nft_token_type.remove(&contract_and_token_id);
             if by_nft_token_type.is_empty() {
                 self.by_nft_token_type.remove(&token_type);
             } else {
-                self.by_nft_token_type.insert(&token_type, &by_nft_token_type);
+                self.by_nft_token_type
+                    .insert(&token_type, &by_nft_token_type);
             }
         }
 

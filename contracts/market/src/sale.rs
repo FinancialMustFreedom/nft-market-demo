@@ -33,7 +33,6 @@ pub struct PurchaseArgs {
 impl Contract {
     /// for add sale see: nft_callbacks.rs
 
-    /// TODO remove without redirect to wallet? panic reverts
     #[payable]
     pub fn remove_sale(&mut self, nft_contract_id: ValidAccountId, token_id: String) {
         assert_one_yocto();
@@ -85,16 +84,13 @@ impl Contract {
         assert!(deposit > 0, "Attached deposit must be greater than 0");
 
         if !sale.is_auction && deposit == price {
-            self.process_purchase(
-                contract_id,
-                token_id,
-                ft_token_id,
-                U128(deposit),
-                buyer_id,
-            );
+            self.process_purchase(contract_id, token_id, ft_token_id, U128(deposit), buyer_id);
         } else {
             if sale.is_auction && price > 0 {
-                assert!(deposit >= price, "Attached deposit must be greater than reserve price");
+                assert!(
+                    deposit >= price,
+                    "Attached deposit must be greater than reserve price"
+                );
             }
             self.add_bid(
                 contract_and_token_id,
@@ -120,11 +116,14 @@ impl Contract {
             owner_id: buyer_id,
             price: U128(amount),
         };
-        
-        let bids_for_token_id = sale.bids.entry(ft_token_id.clone()).or_insert_with(Vec::new);
-        
+
+        let bids_for_token_id = sale
+            .bids
+            .entry(ft_token_id.clone())
+            .or_insert_with(Vec::new);
+
         if !bids_for_token_id.is_empty() {
-            let current_bid = &bids_for_token_id[bids_for_token_id.len()-1];
+            let current_bid = &bids_for_token_id[bids_for_token_id.len() - 1];
             assert!(
                 amount > current_bid.price.0,
                 "Can't pay less than or equal to current bid price: {}",
@@ -143,12 +142,12 @@ impl Contract {
                 );
             }
         }
-        
+
         bids_for_token_id.push(new_bid);
         if bids_for_token_id.len() > self.bid_history_length as usize {
             bids_for_token_id.remove(0);
         }
-        
+
         self.sales.insert(&contract_and_token_id, &sale);
     }
 
@@ -159,11 +158,12 @@ impl Contract {
         ft_token_id: ValidAccountId,
     ) {
         let contract_id: AccountId = nft_contract_id.into();
-        let contract_and_token_id = format!("{}{}{}", contract_id.clone(), DELIMETER, token_id.clone());
+        let contract_and_token_id =
+            format!("{}{}{}", contract_id.clone(), DELIMETER, token_id.clone());
         // remove bid before proceeding to process purchase
         let mut sale = self.sales.get(&contract_and_token_id).expect("No sale");
         let bids_for_token_id = sale.bids.remove(ft_token_id.as_ref()).expect("No bids");
-        let bid = &bids_for_token_id[bids_for_token_id.len()-1];
+        let bid = &bids_for_token_id[bids_for_token_id.len() - 1];
         self.sales.insert(&contract_and_token_id, &sale);
         // panics at `self.internal_remove_sale` and reverts above if predecessor is not sale.owner_id
         self.process_purchase(
@@ -217,7 +217,6 @@ impl Contract {
         sale: Sale,
         price: U128,
     ) -> U128 {
-
         // checking for payout information
         let payout_option = promise_result_as_success().and_then(|value| {
             // None means a bad payout from bad NFT contract
@@ -226,7 +225,10 @@ impl Contract {
                 .and_then(|payout| {
                     // gas to do 10 FT transfers (and definitely 10 NEAR transfers)
                     if payout.len() + sale.bids.len() > 10 || payout.is_empty() {
-                        env::log(format!("Cannot have more than 10 royalties and sale.bids refunds").as_bytes());
+                        env::log(
+                            format!("Cannot have more than 10 royalties and sale.bids refunds")
+                                .as_bytes(),
+                        );
                         None
                     } else {
                         // TODO off by 1 e.g. payouts are fractions of 3333 + 3333 + 3333
