@@ -103,7 +103,7 @@ impl Contract {
         this
     }
 
-    /// only owner
+    /// 添加新的支付代币支持
     pub fn add_ft_token_ids(&mut self, ft_token_ids: Vec<ValidAccountId>) -> Vec<bool> {
         self.assert_owner();
         let mut added = vec![];
@@ -146,8 +146,7 @@ impl Contract {
         }
     }
 
-    /// views
-
+    // views
     pub fn supported_ft_token_ids(&self) -> Vec<AccountId> {
         self.ft_token_ids.to_vec()
     }
@@ -173,5 +172,47 @@ impl Contract {
 
     pub fn storage_amount(&self) -> U128 {
         U128(STORAGE_PER_SALE)
+    }
+}
+
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod tests {
+    use super::*;
+    use near_sdk::test_utils::{accounts, VMContextBuilder};
+    use near_sdk::{testing_env, MockedBlockchain};
+
+    fn get_context(predecessor_account_id: ValidAccountId) -> VMContextBuilder {
+        let mut builder = VMContextBuilder::new();
+        builder
+            .current_account_id(accounts(0))
+            .signer_account_id(predecessor_account_id.clone())
+            .predecessor_account_id(predecessor_account_id);
+        builder
+    }
+
+    #[test]
+    fn test_new() {
+        let context = get_context(accounts(0));
+        testing_env!(context.build());
+        let contract = Contract::new(accounts(0), None, None);
+        assert_eq!(contract.bid_history_length, 1u8);
+        assert_eq!(contract.ft_token_ids.contains(&"near".to_string()), true);
+        assert_ne!(contract.ft_token_ids.contains(&"eth".to_string()), true);
+    }
+
+    #[test]
+    fn test_add_token_type() {
+        let context = get_context(accounts(0));
+        testing_env!(context.build());
+        let mut contract = Contract::new(accounts(0), None, None);
+        assert_ne!(
+            contract.ft_token_ids.contains(&accounts(3).to_string()),
+            true
+        );
+        contract.add_ft_token_ids(vec![accounts(3)]);
+        assert_eq!(
+            contract.ft_token_ids.contains(&accounts(3).to_string()),
+            true
+        );
     }
 }
