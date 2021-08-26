@@ -24,4 +24,17 @@ const getBalance = async ({ wallet }) => {
     4
   );
 };
-export default { getWallet, getBalance };
+const isAccountTaken = async (accountId) => {
+  const account = new Account(near.connection, accountId);
+  try {
+    await account.state();
+    return true;
+  } catch (e) {
+    if (!/does not exist/.test(e.toString())) {
+      throw e;
+    }
+  }
+  return false;
+};
+
+export default { getWallet, getBalance, isAccountTaken };
