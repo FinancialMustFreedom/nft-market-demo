@@ -10,6 +10,8 @@ const getConfig = (env) => {
         walletUrl: "https://wallet.testnet.near.org",
         helperUrl: "https://helper.testnet.near.org",
         explorerUrl: "https://explorer.testnet.near.org",
+        GAS: "200000000000000",
+        tokenType: "nft-2048",
       };
     default:
       throw Error(

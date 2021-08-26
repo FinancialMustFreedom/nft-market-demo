@@ -1,6 +1,6 @@
 import { Account, keyStores, Near, WalletConnection } from "near-api-js";
 import getConfig from "../config";
-import { formatNearAmount } from "near-api-js/lib/utils/format";
+import { formatNearAmount, parseNearAmount } from "near-api-js/lib/utils/format";
 
 const nearConfig = getConfig("testnet");
 
@@ -24,6 +24,7 @@ const getBalance = async ({ wallet }) => {
     4
   );
 };
+
 const isAccountTaken = async (accountId) => {
   const account = new Account(near.connection, accountId);
   try {
@@ -37,4 +38,4 @@ const isAccountTaken = async (accountId) => {
   return false;
 };
 
-export default { getWallet, getBalance, isAccountTaken };
+export default { getWallet, getBalance, isAccountTaken, parseNearAmount, nearConfig };

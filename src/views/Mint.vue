@@ -9,8 +9,7 @@
       <a-divider orientation="left">NFT</a-divider>
       <a-form-model-item label="NFT 图片链接" required prop="imageLink">
         <a-input v-model="form.imageLink" @change="changeImageLink()" />
-        <img :src="form.imageLink" @error="errimg()" />
-        <p></p>
+        <img :src="form.imageLink" width="600px" @error="errimg()" />
       </a-form-model-item>
       <a-divider orientation="left">版税</a-divider>
       <a-list
@@ -70,14 +69,9 @@
   </div>
 </template>
 
-<style scoped>
-#img {
-  width: 600px;
-  height: 50%;
-}
-</style>
-
 <script>
+import utils from "../utils/near-utils";
+
 export default {
   name: "mint",
   data() {
@@ -100,13 +94,47 @@ export default {
     };
   },
   methods: {
-    handMint: function () {
+    error_notification(msg) {
+      this.$notification["error"]({
+        message: "错误提示",
+        description: msg,
+      });
+    },
+    async handMint() {
       if (!this.imageLinkAvail) {
-        this.$notification["error"]({
-          message: "错误提示",
-          description: "NFT图片链接不是有效的链接",
-        });
+        return this.error_notification("NFT图片链接不是有效的链接");
       }
+      let perpetual_royalties = Object.entries(this.royalties)
+        .map(([receiver, royalty]) => ({
+          [receiver]: royalty * 100,
+        }))
+        .reduce((acc, cur) => Object.assign(acc, cur), {});
+      if (
+        Object.values(perpetual_royalties).reduce((a, c) => a + c, 0) > 2000
+      ) {
+        return this.error_notification("NFT版税总比例不得超过20%");
+      }
+
+      const { wallet, contractAccount } = await utils.getWallet();
+      let media = this.form.imageLink;
+      const metadata = {
+        media,
+        issued_at: Date.now().toString(),
+      };
+      const deposit = utils.parseNearAmount("0.1");
+      console.log(wallet.account(), deposit, contractAccount);
+      await wallet.account().functionCall(
+        utils.nearConfig.contractName,
+        "nft_mint",
+        {
+          token_id: utils.nearConfig.tokenType + "-" + Date.now(),
+          metadata,
+          perpetual_royalties,
+          token_type: utils.nearConfig.tokenType,
+        },
+        utils.nearConfig.GAS,
+        deposit
+      );
     },
     errimg() {
       if (this.form.imageLink) {
@@ -116,8 +144,20 @@ export default {
     changeImageLink() {
       this.imageLinkAvail = true;
     },
-    addRoyalty() {
-      this.$set(this.royalties, this.form.receiver, this.form.royalty);
+    async addRoyalty() {
+      if (Object.entries(this.royalties).length >= 6) {
+        return this.error_notification("最多只能添加6个版税账户");
+      }
+      if (this.form.receiver) {
+        const exists = await utils.isAccountTaken(this.form.receiver);
+        if (!exists) {
+          return this.error_notification(
+            "Near账号 " + this.form.receiver + " 不存在"
+          );
+        }
+
+        this.$set(this.royalties, this.form.receiver, this.form.royalty);
+      }
     },
     removeRoyalty(receiver) {
       this.$delete(this.royalties, receiver);
