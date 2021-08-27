@@ -4,7 +4,9 @@
       <a-col :span="5" v-for="(item, i) in metadatas" :key="i">
         <img :src="item.md[0].metadata.media" width="320px" height="220px" />
         <div id="on-sale">售价：{{ item.show_price }} near</div>
-        <a-button id="buy" @click="buy_nft(item.md[0].token_id, item.price)"
+        <a-button
+          id="buy"
+          @click="buy_nft(item.md[0].token_id, item.show_price)"
           >购买</a-button
         >
         <a-divider></a-divider>
@@ -68,8 +70,6 @@ export default {
   },
   methods: {
     buy_nft: async function (token_id, offerPrice) {
-      console.log("--> md: ", this.metadatas, " gas: ", utils.nearConfig.GAS);
-      this.$message.info(" token: " + token_id + offerPrice);
       console.log("buy, token_id: ", token_id, " offerPrice", offerPrice);
       if (offerPrice == 0) {
         offerPrice = "0.0001";
