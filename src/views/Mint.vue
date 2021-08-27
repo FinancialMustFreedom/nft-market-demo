@@ -115,15 +115,13 @@ export default {
         return this.error_notification("NFT版税总比例不得超过20%");
       }
 
-      const { wallet, contractAccount } = await utils.getWallet();
       let media = this.form.imageLink;
       const metadata = {
         media,
         issued_at: Date.now().toString(),
       };
       const deposit = utils.parseNearAmount("0.1");
-      console.log(wallet.account(), deposit, contractAccount);
-      await wallet.account().functionCall(
+      await window.wallet.account().functionCall(
         utils.nearConfig.contractName,
         "nft_mint",
         {
