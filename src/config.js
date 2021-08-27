@@ -1,4 +1,5 @@
-const CONTRACT_NAME = "worker.testnet";
+const CONTRACT_NAME = "dev-1624406486386-79437689012031";
+// const CONTRACT_NAME = "dev-1630028625884-87147957230520";
 
 const getConfig = (env) => {
   switch (env) {
