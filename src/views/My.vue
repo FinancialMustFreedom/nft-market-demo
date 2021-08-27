@@ -36,7 +36,7 @@ export default {
     async getMyNFTs() {
       return await window.wallet
         .account()
-        .viewFunction(utils.nearConfig.contractName, "nft_tokens_for_owners", {
+        .viewFunction(utils.nearConfig.contractName, "nft_tokens_for_owner", {
           account_id: window.wallet.getAccountId(),
           from_index: "0",
           limit: 50,
