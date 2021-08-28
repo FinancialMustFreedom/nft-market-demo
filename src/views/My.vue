@@ -28,7 +28,6 @@
           <a-col>
             <div style="display: none">
               {{ (item.sales_ft = "near") }}
-              {{ (item.sales_price = 0.0) }}
             </div>
             <img :src="item.metadata.media" width="300" />
           </a-col>
@@ -133,6 +132,13 @@ export default {
     },
     marketSaleSubmit(index) {
       this.$set(this.saleLoading, index, true);
+      if (
+        !this.myNFTs[index].sales_price ||
+        this.myNFTs[index].sales_price < 0.1
+      ) {
+        this.$set(this.saleLoading, index, false);
+        return this.$message.warning("价格不能低于0.1");
+      }
       this.handleSaleUpdate(
         this.myNFTs[index].token_id,
         this.myNFTs[index].sales_ft,

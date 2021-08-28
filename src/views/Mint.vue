@@ -95,10 +95,7 @@ export default {
   },
   methods: {
     error_notification(msg) {
-      this.$notification["error"]({
-        message: "错误提示",
-        description: msg,
-      });
+      return this.$message.error(msg);
     },
     async handMint() {
       if (!this.imageLinkAvail) {
