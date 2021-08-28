@@ -1,60 +1,74 @@
 <template>
   <div>
-    <h1>This is my nft page</h1>
-    <a-alert
-      v-if="storagePaid == 0"
-      message="还未在市场注册销售"
-      type="warning"
+    <a-list
+      item-layout="vertical"
+      size="small"
+      :pagination="pagination"
+      :data-source="myNFTs"
     >
-      <p slot="description">
-        <a-button
-          type="primary"
-          :loading="storePaidLoading"
-          @click="marketRegisterStorage()"
+      <div slot="header">
+        <a-alert
+          v-if="storagePaid == 0"
+          message="还未在市场注册销售"
+          type="warning"
         >
-          注册市场销售
-        </a-button>
-      </p>
-    </a-alert>
-    <a-row type="flex" justify="space-around" align="middle">
-      <a-col :span="10" v-for="(item, i) in myNFTs" :key="i">
-        <div style="display: none">{{ (item.sales_ft = "near") }}</div>
-        <img :src="item.metadata.media" width="200px" height="220px" />
-        <div v-show="storagePaid > 0">
-          <a-input-group compact>
-            <a-select default-value="near" v-model="item.sales_ft">
-              <a-select-option value="near"> NEAR </a-select-option>
-            </a-select>
-            <a-input-number
-              v-model="item.sales_price"
-              style="width: 30%"
-              :min="0"
-              :step="0.1"
-              :parser="(value) => value.replace('%', '')"
-              placeholder="价格"
-              prefix="价格"
-            />
+          <p slot="description">
             <a-button
               type="primary"
-              :loading="saleLoading"
-              @click="marketSaleSubmit(i)"
+              :loading="storePaidLoading"
+              @click="marketRegisterStorage()"
             >
-              出售
+              注册市场销售
             </a-button>
-          </a-input-group>
-        </div>
-        <a-divider></a-divider>
-      </a-col>
-    </a-row>
+          </p>
+        </a-alert>
+      </div>
+      <a-list-item slot="renderItem" key="item.title" slot-scope="item, index">
+        <a-row type="flex" justify="space-around" align="middle">
+          <a-col>
+            <div style="display: none">
+              {{ (item.sales_ft = "near") }}
+              {{ (item.sales_price = 0.0) }}
+            </div>
+            <img :src="item.metadata.media" width="300" />
+          </a-col>
+          <a-col>
+            <a-list-item-meta description="版税"> </a-list-item-meta>
+            <p v-for="(royalty, receiver) in item.royalty" :key="receiver">
+              <span>{{ receiver }}</span>
+              <a-divider type="vertical" dashed />
+              <span>{{ royalty / 100 }} %</span>
+            </p>
+            <div v-show="storagePaid > 0">
+              <a-input-group compact>
+                <a-select default-value="near" v-model="item.sales_ft">
+                  <a-select-option value="near"> NEAR </a-select-option>
+                </a-select>
+                <a-input-number
+                  v-model="item.sales_price"
+                  style="width: 30%"
+                  :default-value="0.0"
+                  :min="0"
+                  :step="0.1"
+                  placeholder="价格"
+                  prefix="价格"
+                />
+                <a-button
+                  type="primary"
+                  :loading="saleLoading[index]"
+                  @click="marketSaleSubmit(index)"
+                >
+                  出售
+                </a-button>
+              </a-input-group>
+            </div>
+          </a-col>
+        </a-row>
+      </a-list-item>
+    </a-list>
   </div>
 </template>
 
-<style scoped>
-#h220 {
-  height: 220px;
-  background: orange;
-}
-</style>
 <script>
 import utils from "../utils/near-utils";
 import BN from "bn.js";
@@ -66,10 +80,9 @@ export default {
       myNFTs: [],
       storagePaid: -1,
       storePaidLoading: false,
-      saleLoading: false,
+      saleLoading: [],
     };
   },
-  beforeCreate() {},
   created() {
     this.getMyNFTs().then((nfts) => {
       console.log("getMyNFTs: ", nfts);
@@ -119,6 +132,7 @@ export default {
         );
     },
     marketSaleSubmit(index) {
+      this.$set(this.saleLoading, index, true);
       this.handleSaleUpdate(
         this.myNFTs[index].token_id,
         this.myNFTs[index].sales_ft,
@@ -126,7 +140,6 @@ export default {
       );
     },
     async handleSaleUpdate(token_id, ft, price) {
-      this.saleLoading = true;
       console.log(token_id, ft, price);
       const sale = await window.wallet
         .account()

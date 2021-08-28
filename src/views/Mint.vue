@@ -9,7 +9,7 @@
       <a-divider orientation="left">NFT</a-divider>
       <a-form-model-item label="NFT 图片链接" required prop="imageLink">
         <a-input v-model="form.imageLink" @change="changeImageLink()" />
-        <img :src="form.imageLink" width="600px" @error="errimg()" />
+        <img :src="form.imageLink" width="400" @error="errimg()" />
       </a-form-model-item>
       <a-divider orientation="left">版税</a-divider>
       <a-list
