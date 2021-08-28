@@ -39,6 +39,10 @@ pub struct Contract {
     // 自定义部分
     pub supply_cap_by_type: TypeSupplyCaps, // 每种token的铸币上限
     pub tokens_per_type: LookupMap<TokenType, UnorderedSet<TokenId>>, // 记录每种token的数量
+    // 下面这个token的类型锁，主要是用来管控nft的市场交易行为的，在创建nft的时候每个token都是有类型的
+    // 主要是为了管控，默认情况下类型使用合约的所有者控制的，默认是锁着的（这里的锁着事值这个类型的token
+    // 不能参与市场交易，即使参加了也会失败，并退钱给人家），可以当这个token类型有一定数量了后，可以放开
+    // 锁，参加交易，每一种类型的铸造数量也是有上限的，这些都是为管控而服务的。
     pub token_types_locked: UnorderedSet<TokenType>,
     pub contract_royalty: u32, // 合约所收的版税
 }
