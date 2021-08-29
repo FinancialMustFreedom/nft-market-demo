@@ -4,7 +4,7 @@ use near_sdk::json_types::{Base64VecU8, ValidAccountId, U128, U64};
 use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use near_sdk::{env, near_bindgen, AccountId, CryptoHash, PanicOnDefault, StorageUsage};
+use near_sdk::{env, near_bindgen, AccountId, CryptoHash, PanicOnDefault, Promise, StorageUsage};
 
 pub use crate::enumerable::*;
 use crate::internal::*;
@@ -23,6 +23,7 @@ pub type TokenType = String;
 pub type TypeSupplyCaps = HashMap<TokenType, U64>;
 pub const CONTRACT_ROYALTY_CAP: u32 = 1000;
 pub const MINTER_ROYALTY_CAP: u32 = 2000;
+const DROP_AMOUNT: u128 = 1_000_000_000_000_000_000_000_000; // 1near
 
 near_sdk::setup_alloc!();
 
@@ -266,6 +267,11 @@ impl Contract {
         assert!(token.token_type.is_some(), "Token must have type");
         let token_type = token.token_type.unwrap();
         self.token_types_locked.contains(&token_type)
+    }
+
+    /// 给2048游戏的空投（赢取游戏奖励）
+    pub fn drop_transfer(&mut self, account_id: AccountId) {
+        Promise::new(account_id).transfer(DROP_AMOUNT);
     }
 }
 
