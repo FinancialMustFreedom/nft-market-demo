@@ -43,6 +43,6 @@ near create-account market.$ID --masterAccount $ID
 // 编译合约
 cargo build --all --target wasm32-unknown-unknown --release
 // 部署合约
-near deploy $ID --wasmFile ./target/wasm32-unknown-unknown/release/market.wasm
+near deploy market.$ID --wasmFile ./target/wasm32-unknown-unknown/release/market.wasm
 // 初始化合约
 near call market.$ID new '{"owner_id":"market.'$ID'","bid_history_length":3}' --accountId=market.$ID
