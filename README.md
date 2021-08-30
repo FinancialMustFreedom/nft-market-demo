@@ -48,15 +48,8 @@ https://explorer.testnet.near.org/transactions/66L69BSRmvuzg8yicfNkx5G457Vrqw1ni
 ''
 
 $ near view $ID get_token_types_locked
-Scheduling a call: dev-1630203952408-20676864243759.unlock_token_types({"token_types": ["nft-2048"]})
-Transaction Id 4Cb6NhgmVB69Ug47HX2M3Nfar7iNpdivMNpZcTw99Bxg
-To see the transaction in the transaction explorer, please open this url in your browser
-https://explorer.testnet.near.org/transactions/4Cb6NhgmVB69Ug47HX2M3Nfar7iNpdivMNpZcTw99Bxg
-''
 
 ```
-
-
 
  ### Market 合约部署
  ```bash
